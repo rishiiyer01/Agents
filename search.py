@@ -1,6 +1,7 @@
 #using claude3 (probably not opus) for search
-from langchain.agents import initialize_agent, Tool
-from langchain.llms import Anthropic
+from langchain.agents import initialize_agent, Tool, AgentExecutor
+from langchain.chat_models import ChatAnthropic
+from langchain.memory import ConversationBufferMemory
 import wikipedia
 
 def search_wikipedia(query):
@@ -19,8 +20,11 @@ tools = [
         description="Searches Wikipedia for relevant information."
     )
 ]
-api_key=/home/iyer.ris/anthropic_api_key.txt
-llm = Anthropic(api_key="api_key")
+
+with open("/home/iyer.ris/anthropic_api_key.txt", "r") as file:
+    api_key = file.read().strip()
+
+llm = ChatAnthropic(anthropic_api_key=api_key)
 
 examples = [
     {
@@ -33,6 +37,8 @@ examples = [
     }
 ]
 
+memory = ConversationBufferMemory(memory_key="chat_history")
+
 agent = initialize_agent(
     tools,
     llm,
@@ -40,9 +46,10 @@ agent = initialize_agent(
     verbose=True,
     max_iterations=3,
     early_stopping_method="generate",
-    examples=examples
+    examples=examples,
+    memory=memory
 )
 
 query = "What is the capital of Germany?"
-response = agent.run(query)
+response = agent.run(input=query)
 print(response)
